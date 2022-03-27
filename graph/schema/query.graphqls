@@ -1,0 +1,10 @@
+# The query type, represents all of the entry points into our object graph
+type Query {
+    hero(episode: Episode = NEWHOPE): Character
+    reviews(episode: Episode!, since: Time): [Review!]!
+    search(text: String!): [SearchResult!]!
+    character(id: ID!): Character
+    droid(id: ID!): Droid
+    human(id: ID!): Human
+    starship(id: ID!): Starship
+}

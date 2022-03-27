@@ -1,0 +1,9 @@
+# The input object sent when someone is creating a new review
+input ReviewInput {
+    # 0-5 stars
+    stars: Int!
+    # Comment about the movie, optional
+    commentary: String
+    # when the review was posted
+    time: Time
+}
