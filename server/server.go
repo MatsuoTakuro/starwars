@@ -11,9 +11,11 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/MatsuoTakuro/starwars/graph/generated"
+	"github.com/MatsuoTakuro/starwars/graph/resolver"
 )
 
-const defaultPort = "8080"
+const defaultPort = "8082"
+const title = "gqlgen-starwars"
 
 func main() {
 	port := os.Getenv("PORT")
@@ -21,7 +23,8 @@ func main() {
 		port = defaultPort
 	}
 
-	srv := handler.NewDefaultServer(generated.NewExecutableSchema(starwars.NewResolver()))
+	// TODO: #1 Implement resolvers
+	srv := handler.NewDefaultServer(generated.NewExecutableSchema(resolver.NewResolver()))
 	srv.AroundFields(func(ctx context.Context, next graphql.Resolver) (res interface{}, err error) {
 		rc := graphql.GetFieldContext(ctx)
 		fmt.Println("Entered", rc.Object, rc.Field.Name)
@@ -30,9 +33,9 @@ func main() {
 		return res, err
 	})
 
-	http.Handle("/", playground.Handler("Lesson Starwars", "/query"))
+	http.Handle("/", playground.Handler(title, "/query"))
 	http.Handle("/query", srv)
 
-	log.Printf("connect to http://localhost:%s/ for Lesson Starwars", port)
+	log.Printf("connect to http://localhost:%s/ for %s", port, title)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

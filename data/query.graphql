@@ -1,0 +1,87 @@
+query hero {
+  hero {
+    id
+    name
+    friends {
+      id
+      name
+    }
+    appearsIn
+  }
+}
+
+query reviews {
+  reviews(episode: NEWHOPE) {
+    stars
+    commentary
+    time
+  }
+}
+
+query search {
+  search(text: "sky") {
+    __typename
+  }
+}
+
+query character {
+  character(id: 1000) {
+    id
+    name
+    friends {
+      id
+      name
+    }
+    appearsIn
+  }
+}
+
+query dorid {
+  droid(id: 2000) {
+    id
+    name
+    friends {
+      id
+      name
+    }
+    appearsIn
+    primaryFunction
+  }
+}
+
+query human {
+  human(id: 1000) {
+    id
+    name
+    height
+    mass
+    friends {
+      id
+      name
+    }
+    appearsIn
+    starships {
+      id
+      name
+      length
+      history
+    }
+  }
+}
+
+query starship {
+  starship(id: 3000) {
+    id
+    name
+    length
+    history
+  }
+}
+
+mutation createReview($reviewInput: ReviewInput!) {
+  createReview(episode: NEWHOPE, review: $reviewInput) {
+    stars
+    commentary
+    time
+  }
+}
