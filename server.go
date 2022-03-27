@@ -7,8 +7,6 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/MatsuoTakuro/starwars/graph"
-	"github.com/MatsuoTakuro/starwars/graph/generated"
 )
 
 const defaultPort = "8080"
