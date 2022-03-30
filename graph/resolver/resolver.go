@@ -6,7 +6,6 @@ package resolver
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"strconv"
 	"strings"
 
@@ -21,22 +20,6 @@ type Resolver struct {
 	reviews   map[model.Episode][]*model.Review
 }
 
-func (r *Resolver) Droid() generated.DroidResolver {
-	return &droidResolver{r}
-}
-
-func (r *Resolver) FriendsConnection() generated.FriendsConnectionResolver {
-	return &friendsConnectionResolver{r}
-}
-
-func (r *Resolver) Human() generated.HumanResolver {
-	return &humanResolver{r}
-}
-
-func (r *Resolver) Starship() generated.StarshipResolver {
-	return &starshipResolver{r}
-}
-
 func (r *Resolver) resolveCharacters(ctx context.Context, ids []string) ([]model.Character, error) {
 	result := make([]model.Character, len(ids))
 	for i, id := range ids {
@@ -48,18 +31,6 @@ func (r *Resolver) resolveCharacters(ctx context.Context, ids []string) ([]model
 	}
 	return result, nil
 }
-
-type droidResolver struct{ *Resolver }
-
-func (r *droidResolver) Friends(ctx context.Context, obj *model.Droid) ([]model.Character, error) {
-	return r.resolveCharacters(ctx, obj.FriendIds)
-}
-
-func (r *droidResolver) FriendsConnection(ctx context.Context, obj *model.Droid, first *int, after *string) (*model.FriendsConnection, error) {
-	return r.resolveFriendConnection(ctx, obj.FriendIds, first, after)
-}
-
-type friendsConnectionResolver struct{ *Resolver }
 
 func (r *Resolver) resolveFriendConnection(_ context.Context, ids []string, first *int, after *string) (*model.FriendsConnection, error) {
 	from := 0
@@ -88,63 +59,6 @@ func (r *Resolver) resolveFriendConnection(_ context.Context, ids []string, firs
 		From: from,
 		To:   to,
 	}, nil
-}
-
-func (r *friendsConnectionResolver) Edges(ctx context.Context, obj *model.FriendsConnection) ([]*model.FriendsEdge, error) {
-	friends, err := r.resolveCharacters(ctx, obj.Ids)
-	if err != nil {
-		return nil, err
-	}
-
-	edges := make([]*model.FriendsEdge, obj.To-obj.From)
-	for i := range edges {
-		edges[i] = &model.FriendsEdge{
-			Cursor: model.EncodeCursor(obj.From + i),
-			Node:   friends[obj.From+i],
-		}
-	}
-	return edges, nil
-}
-
-func (r *friendsConnectionResolver) Friends(ctx context.Context, obj *model.FriendsConnection) ([]model.Character, error) {
-	return r.resolveCharacters(ctx, obj.Ids)
-}
-
-type humanResolver struct{ *Resolver }
-
-func (r *humanResolver) Friends(ctx context.Context, obj *model.Human) ([]model.Character, error) {
-	return r.resolveCharacters(ctx, obj.FriendIds)
-}
-
-func (r *humanResolver) FriendsConnection(ctx context.Context, obj *model.Human, first *int, after *string) (*model.FriendsConnection, error) {
-	return r.resolveFriendConnection(ctx, obj.FriendIds, first, after)
-}
-
-func (r *humanResolver) Starships(ctx context.Context, obj *model.Human) ([]*model.Starship, error) {
-	var result []*model.Starship
-	for _, id := range obj.StarshipIds {
-		char, err := r.Query().Starship(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		if char != nil {
-			result = append(result, char)
-		}
-	}
-	return result, nil
-}
-
-type starshipResolver struct{ *Resolver }
-
-func (r *starshipResolver) Length(ctx context.Context, obj *model.Starship, unit *model.LengthUnit) (float64, error) {
-	switch *unit {
-	case model.LengthUnitMeter, "":
-		return obj.Length, nil
-	case model.LengthUnitFoot:
-		return obj.Length * 3.28084, nil
-	default:
-		return 0, errors.New("invalid unit")
-	}
 }
 
 func NewResolver() generated.Config {

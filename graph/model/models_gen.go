@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"time"
 )
 
 type Character interface {
@@ -26,12 +25,6 @@ type PageInfo struct {
 	StartCursor string `json:"startCursor"`
 	EndCursor   string `json:"endCursor"`
 	HasNextPage bool   `json:"hasNextPage"`
-}
-
-type ReviewInput struct {
-	Stars      int        `json:"stars"`
-	Commentary *string    `json:"commentary"`
-	Time       *time.Time `json:"time"`
 }
 
 type Starship struct {

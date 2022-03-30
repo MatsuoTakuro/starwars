@@ -42,6 +42,7 @@ type ResolverRoot interface {
 	Human() HumanResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
+	Starship() StarshipResolver
 }
 
 type DirectiveRoot struct {
@@ -81,7 +82,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateReview func(childComplexity int, episode model.Episode, review model.ReviewInput) int
+		CreateReview func(childComplexity int, episode model.Episode, review model.Review) int
 	}
 
 	PageInfo struct {
@@ -129,7 +130,7 @@ type HumanResolver interface {
 	Starships(ctx context.Context, obj *model.Human) ([]*model.Starship, error)
 }
 type MutationResolver interface {
-	CreateReview(ctx context.Context, episode model.Episode, review model.ReviewInput) (*model.Review, error)
+	CreateReview(ctx context.Context, episode model.Episode, review model.Review) (*model.Review, error)
 }
 type QueryResolver interface {
 	Hero(ctx context.Context, episode *model.Episode) (model.Character, error)
@@ -139,6 +140,9 @@ type QueryResolver interface {
 	Droid(ctx context.Context, id string) (*model.Droid, error)
 	Human(ctx context.Context, id string) (*model.Human, error)
 	Starship(ctx context.Context, id string) (*model.Starship, error)
+}
+type StarshipResolver interface {
+	Length(ctx context.Context, obj *model.Starship, unit *model.LengthUnit) (float64, error)
 }
 
 type executableSchema struct {
@@ -321,7 +325,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateReview(childComplexity, args["episode"].(model.Episode), args["review"].(model.ReviewInput)), true
+		return e.complexity.Mutation.CreateReview(childComplexity, args["episode"].(model.Episode), args["review"].(model.Review)), true
 
 	case "PageInfo.endCursor":
 		if e.complexity.PageInfo.EndCursor == nil {
@@ -774,10 +778,10 @@ func (ec *executionContext) field_Mutation_createReview_args(ctx context.Context
 		}
 	}
 	args["episode"] = arg0
-	var arg1 model.ReviewInput
+	var arg1 model.Review
 	if tmp, ok := rawArgs["review"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("review"))
-		arg1, err = ec.unmarshalNReviewInput2githubᚗcomᚋMatsuoTakuroᚋstarwarsᚋgraphᚋmodelᚐReviewInput(ctx, tmp)
+		arg1, err = ec.unmarshalNReviewInput2githubᚗcomᚋMatsuoTakuroᚋstarwarsᚋgraphᚋmodelᚐReview(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1690,7 +1694,7 @@ func (ec *executionContext) _Mutation_createReview(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateReview(rctx, args["episode"].(model.Episode), args["review"].(model.ReviewInput))
+		return ec.resolvers.Mutation().CreateReview(rctx, args["episode"].(model.Episode), args["review"].(model.Review))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2339,8 +2343,8 @@ func (ec *executionContext) _Starship_length(ctx context.Context, field graphql.
 		Object:     "Starship",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2353,7 +2357,7 @@ func (ec *executionContext) _Starship_length(ctx context.Context, field graphql.
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Length, nil
+		return ec.resolvers.Starship().Length(rctx, obj, args["unit"].(*model.LengthUnit))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3591,8 +3595,8 @@ func (ec *executionContext) ___Type_specifiedByURL(ctx context.Context, field gr
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputReviewInput(ctx context.Context, obj interface{}) (model.ReviewInput, error) {
-	var it model.ReviewInput
+func (ec *executionContext) unmarshalInputReviewInput(ctx context.Context, obj interface{}) (model.Review, error) {
+	var it model.Review
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -3620,7 +3624,7 @@ func (ec *executionContext) unmarshalInputReviewInput(ctx context.Context, obj i
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("time"))
-			it.Time, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			it.Time, err = ec.unmarshalOTime2timeᚐTime(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4362,7 +4366,7 @@ func (ec *executionContext) _Starship(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = innerFunc(ctx)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "name":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -4372,18 +4376,28 @@ func (ec *executionContext) _Starship(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = innerFunc(ctx)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "length":
+			field := field
+
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Starship_length(ctx, field, obj)
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Starship_length(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
 
-			out.Values[i] = innerFunc(ctx)
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
 
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			})
 		case "history":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Starship_history(ctx, field, obj)
@@ -4392,7 +4406,7 @@ func (ec *executionContext) _Starship(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = innerFunc(ctx)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -5115,7 +5129,7 @@ func (ec *executionContext) marshalNReview2ᚖgithubᚗcomᚋMatsuoTakuroᚋstar
 	return ec._Review(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNReviewInput2githubᚗcomᚋMatsuoTakuroᚋstarwarsᚋgraphᚋmodelᚐReviewInput(ctx context.Context, v interface{}) (model.ReviewInput, error) {
+func (ec *executionContext) unmarshalNReviewInput2githubᚗcomᚋMatsuoTakuroᚋstarwarsᚋgraphᚋmodelᚐReview(ctx context.Context, v interface{}) (model.Review, error) {
 	res, err := ec.unmarshalInputReviewInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
