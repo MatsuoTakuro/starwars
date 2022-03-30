@@ -5,14 +5,17 @@ package resolver
 
 import (
 	"context"
-	"fmt"
+	"time"
 
 	"github.com/MatsuoTakuro/starwars/graph/generated"
 	"github.com/MatsuoTakuro/starwars/graph/model"
 )
 
-func (r *mutationResolver) CreateReview(ctx context.Context, episode model.Episode, review model.ReviewInput) (*model.Review, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) CreateReview(ctx context.Context, episode model.Episode, review model.Review) (*model.Review, error) {
+	review.Time = time.Now()
+	time.Sleep(1 * time.Second)
+	r.reviews[episode] = append(r.reviews[episode], &review)
+	return &review, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

@@ -5,7 +5,7 @@ package resolver
 
 import (
 	"context"
-	"fmt"
+	"strings"
 	"time"
 
 	"github.com/MatsuoTakuro/starwars/graph/generated"
@@ -13,31 +13,75 @@ import (
 )
 
 func (r *queryResolver) Hero(ctx context.Context, episode *model.Episode) (model.Character, error) {
-	panic(fmt.Errorf("not implemented"))
+	if *episode == model.EpisodeEmpire {
+		return r.humans["1000"], nil
+	}
+	return r.droid["2001"], nil
 }
 
 func (r *queryResolver) Reviews(ctx context.Context, episode model.Episode, since *time.Time) ([]*model.Review, error) {
-	panic(fmt.Errorf("not implemented"))
+	if since == nil {
+		return r.reviews[episode], nil
+	}
+
+	var filtered []*model.Review
+	for _, rev := range r.reviews[episode] {
+		if rev.Time.After(*since) {
+			filtered = append(filtered, rev)
+		}
+	}
+	return filtered, nil
 }
 
 func (r *queryResolver) Search(ctx context.Context, text string) ([]model.SearchResult, error) {
-	panic(fmt.Errorf("not implemented"))
+	var l []model.SearchResult
+	for _, h := range r.humans {
+		if strings.Contains(h.Name, text) {
+			l = append(l, h)
+		}
+	}
+	for _, d := range r.droid {
+		if strings.Contains(d.Name, text) {
+			l = append(l, d)
+		}
+	}
+	for _, s := range r.starships {
+		if strings.Contains(s.Name, text) {
+			l = append(l, s)
+		}
+	}
+	return l, nil
 }
 
 func (r *queryResolver) Character(ctx context.Context, id string) (model.Character, error) {
-	panic(fmt.Errorf("not implemented"))
+	if h, ok := r.humans[id]; ok {
+		return &h, nil
+	}
+	if d, ok := r.droid[id]; ok {
+		return &d, nil
+	}
+	return nil, nil
 }
 
 func (r *queryResolver) Droid(ctx context.Context, id string) (*model.Droid, error) {
-	panic(fmt.Errorf("not implemented"))
+	if d, ok := r.droid[id]; ok {
+		return &d, nil
+	}
+	return nil, nil
 }
 
 func (r *queryResolver) Human(ctx context.Context, id string) (*model.Human, error) {
-	panic(fmt.Errorf("not implemented"))
+	if h, ok := r.humans[id]; ok {
+		return &h, nil
+	}
+	return nil, nil
 }
 
 func (r *queryResolver) Starship(ctx context.Context, id string) (*model.Starship, error) {
-	panic(fmt.Errorf("not implemented"))
+	if s, ok := r.starships[id]; ok {
+		return &s, nil
+	}
+	return nil, nil
 }
 
 // Query returns generated.QueryResolver implementation.
